@@ -1,0 +1,265 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Welbex{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4 ">
+                <h3>ADD WELBEX</h3>
+                <form id="addWelbex" action="">
+                    <div class="form-group">
+                        <input class="form-control" type="text" name="name" placeholder="Name" required>
+                    </div>
+                    <div class="form-group">
+                        <input class="form-control" type="number" name="quantity" placeholder="Quantity" required>
+                    </div>
+                    <div class="form-group">
+                        <input class="form-control" type="number" name="distance" placeholder="Distance"
+                               required>
+                    </div>
+                    <div class="form-group">
+                        <input class="form-control" type="date" name="date" placeholder="Date"
+                               required>
+                    </div>
+
+                    <button class="btn btn-primary form-control" type="submit">SUBMIT</button>
+                </form>
+            </div>
+            <div class="col-md-8">
+                <h3>WELBEXES</h3>
+                <table id="welbexTable" class="table table-striped">
+                    <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Quantity</th>
+                        <th>Distance</th>
+                        <th>Date</th>
+                        <th colspan="3">Update</th>
+                    </tr>
+                    </thead>
+                    <tbody id="welbex_table_body">
+                    {% for welbex in first_page %}
+                        <tr id="welbex-{{ welbex.id }}">
+                            <td class="welbexName welbexData" name="name">{{ welbex.name }}</td>
+                            <td class="welbexQuantity welbexData" name="quantity">{{ welbex.quantity }}</td>
+                            <td class="welbexDistance welbexData" name="distance">{{ welbex.distance }}</td>
+                            <td class="welbexDate welbexData" name="date">{{ welbex.date }}</td>
+                            <td align="center">
+                                <button class="btn btn-success form-control" onClick="editWelbex({{ welbex.id }})"
+                                        data-toggle="modal" data-target="#myModal" )>EDIT
+                                </button>
+                            </td>
+                            <td align="center">
+                                <button class="btn btn-danger form-control" onClick="deleteWelbex({{ welbex.id }})">
+                                    DELETE
+                                </button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+
+                </table>
+                <div id="posts"></div>
+                {% for i in page_range %}
+                    <a style="margin-left: 5px; font-size: 20px;" href="{{ i }}">{{ i }}</a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <!-- Modal -->
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">Update Welbex</h4>
+                </div>
+                <form id="updateWelbex" action="">
+                    <div class="modal-body">
+                        <input class="form-control" id="form-id" type="hidden" name="formId"/>
+                        <label for="name">Name</label>
+                        <input class="form-control" id="form-name" type="text" name="formName"/>
+                        <label for="quantity">Quantity</label>
+                        <input class="form-control" id="form-quantity" type="number" name="formQuantity"/>
+                        <label for="distance">Distance</label>
+                        <input class="form-control" id="form-distance" type="number" name="formDistance"/>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Save changes</button>
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascript %}
+    <script>
+        $('a').click(function (event) {
+            event.preventDefault();
+            var page_n = $(this).attr('href');
+            // ajax
+            $.ajax({
+                type: "POST",
+                url: "{% url 'crud_ajax' %}", // name of url
+                data: {
+                    page_n: page_n, //page_number
+                    csrfmiddlewaretoken: '{{ csrf_token }}',
+                },
+                success: function (resp) {
+                    //loop
+                    $('#welbexTable > tbody').html("");
+                    $.each(resp.results, function (i, val) {
+
+                        $('#welbex_table_body').append('<tr id=welbex-' + val.id + '><td class="welbexName welbexData" name="name">' + val.name + '</td><td class="welbexQuantity welbexData"  name="quantity">'
+                            + val.quantity + '</td><td class="welbexDistance welbexData" name="distance">'
+                            + val.distance + '</td>' + '</td><td class="welbexDate welbexData" name="date">' + val.date + '</td><td><button class="btn btn-success form-control" onClick="editWelbex(' + val.id + ')" data-toggle="modal" data-target="#myModal" )>EDIT </button></td>' +
+                            '</td><td><button class="btn btn-danger form-control" onClick="deleteWelbex(' + val.id + ')" )>Delete </button></td>' + '</tr>')
+
+                    });
+                },
+                error: function () {
+                }
+            }); //
+
+        });
+    </script>
+    <script>
+        // Create Django Ajax Call
+        $("form#addWelbex").submit(function () {
+            var nameInput = $('input[name="name"]').val().trim();
+            var quantityInput = $('input[name="quantity"]').val().trim();
+            var distanceInput = $('input[name="distance"]').val().trim();
+            var dateInput = $('input[name="date"]').val().trim();
+            if (nameInput && quantityInput && distanceInput && dateInput) {
+                // Create Ajax Call
+                $.ajax({
+                    url: '{% url "crud_ajax_create" %}',
+                    data: {
+                        'name': nameInput,
+                        'quantity': quantityInput,
+                        'distance': distanceInput,
+                        'date': dateInput
+                    },
+                    dataType: 'json',
+                    success: function (data) {
+                        if (data.welbex) {
+                            appendToWelbexTable(data.welbex);
+                        }
+                    }
+                });
+
+            } else {
+                alert("All fields must have a valid value.");
+            }
+            $('form#addWelbex').trigger("reset");
+            return false;
+        });
+
+
+        // Delete Django Ajax Call
+        function deleteWelbex(id) {
+            var action = confirm("Are you sure you want to delete this welbex?");
+            if (action != false) {
+                $.ajax({
+                    url: '{% url "crud_ajax_delete" %}',
+                    data: {
+                        'id': id,
+                    },
+                    dataType: 'json',
+                    success: function (data) {
+                        if (data.deleted) {
+                            $("#welbexTable #welbex-" + id).remove();
+                        }
+                    }
+                });
+            }
+        }
+
+
+        // Create Django Ajax Call
+        $("form#updateWelbex").submit(function () {
+            var idInput = $('input[name="formId"]').val().trim();
+            var nameInput = $('input[name="formName"]').val().trim();
+            var quantityInput = $('input[name="formQuantity"]').val().trim();
+            var distanceInput = $('input[name="formDistance"]').val().trim();
+
+            if (nameInput && quantityInput && distanceInput) {
+                // Create Ajax Call
+                $.ajax({
+                    url: '{% url "crud_ajax_update" %}',
+                    data: {
+                        'id': idInput,
+                        'name': nameInput,
+                        'quantity': quantityInput,
+                        'distance': distanceInput
+                    },
+                    dataType: 'json',
+                    success: function (data) {
+                        if (data.welbex) {
+
+                            updateToWelbexTabel(data.welbex);
+                        }
+                    }
+                });
+
+            } else {
+                alert("All fields must have a valid value.");
+            }
+            $('form#updateWelbex').trigger("reset");
+            $('#myModal').modal('hide');
+            return false;
+        });
+
+
+        function editWelbex(id) {
+            if (id) {
+                tr_id = "#welbex-" + id;
+                name = $(tr_id).find(".welbexName").text();
+                quantity = $(tr_id).find(".welbexQuantity").text();
+                distance = $(tr_id).find(".welbexDistance").text();
+                $('#form-id').val(id);
+                $('#form-name').val(name);
+                $('#form-quantity').val(quantity);
+                $('#form-distance').val(distance);
+            }
+        }
+
+        function appendToWelbexTable(welbex) {
+            $("#welbexTable > tbody:last-child").append(`
+        <tr id="welbex-${welbex.id}">
+            <td class="welbexName" name="name">${welbex.name}</td>
+            '<td class="welbexQuantity" name="quantity">${welbex.quantity}</td>
+            '<td class="welbexDistance" name="distance">${welbex.distance}</td>
+            '<td class="welbexDate" name="date">${welbex.date}</td>
+            '<td align="center">
+                <button class="btn btn-success form-control" onClick="editWelbex(${welbex.id})" data-toggle="modal" data-target="#myModal")">EDIT</button>
+            </td>
+            <td align="center">
+                <button class="btn btn-danger form-control" onClick="deleteWelbex(${welbex.id})">DELETE</button>
+            </td>
+        </tr>
+    `);
+        }
+
+        function updateToWelbexTabel(welbex) {
+            $("#welbexTable #welbex-" + welbex.id).children(".welbexData").each(function () {
+
+                var attr = $(this).attr("name");
+                if (attr == "name") {
+                    $(this).text(welbex.name);
+                } else if (attr == "quantity") {
+                    $(this).text(welbex.quantity);
+                } else if (attr == 'distance') {
+                    $(this).text(welbex.distance);
+                }
+            });
+        }
+    </script>
+
+
+{% endblock javascript %}
